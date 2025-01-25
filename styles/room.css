@@ -199,6 +199,7 @@
     align-items: center;
     margin-top: 25px;
     margin-bottom: 225px;
+    background-size: 300px;
 }
 
 .video_container {
@@ -211,6 +212,9 @@
     overflow: hidden;
     height: 300px;
     width: 300px;
+    background-image: url("images/logo.png");
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .video-player {
