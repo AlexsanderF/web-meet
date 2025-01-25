@@ -180,6 +180,17 @@
     display: none;
 }
 
+#stream__box .video_container {
+    border: 2px solid #000;
+    border-radius: 0;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+#stream__box video {
+    border-radius: 0;
+}
+
 #streams__container {
     display: flex;
     flex-wrap: wrap;
@@ -202,12 +213,12 @@
     width: 300px;
 }
 
-.video-player{
+.video-player {
     height: 100%;
     width: 100%;
 }
 
-.video-player video{
+.video-player video {
     border-radius: 50%;
 }
 
