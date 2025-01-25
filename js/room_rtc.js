@@ -1,9 +1,10 @@
 import AgoraRTC from "agora-rtc-sdk-ng";
+import {API_KEY} from "../config";
 
 const uid = Number(sessionStorage.getItem('uid')) || Math.floor(Math.random() * 10000);
 const channelName = 'main'; // Pode ser alterado conforme necessário
 let client;
-let AppID = '71104d47e7ae4b11828a52a67f0c34f7';
+let AppID = API_KEY;
 let localTrack = [];
 let remoteUsers = {};
 
@@ -68,7 +69,12 @@ let joinRoomInit = async () => {
 
 let joinStream = async () => {
     try {
-        localTrack = await AgoraRTC.createMicrophoneAndCameraTracks();
+        localTrack = await AgoraRTC.createMicrophoneAndCameraTracks({}, {
+            encoderConfig: {
+                width:{min: 640, ideal: 1920, max: 1920},
+                height:{min: 480, ideal: 1080, max: 1080}
+            }
+        });
 
         let player = `<div class="video_container" id="user-container-${uid}">
                         <div class="video-player" id="user-${uid}"></div>
