@@ -1,7 +1,9 @@
+import AgoraRTC from "agora-rtc-sdk-ng";
+
 const uid = Number(sessionStorage.getItem('uid')) || Math.floor(Math.random() * 10000);
 const channelName = 'main'; // Pode ser alterado conforme necessário
 let client;
-let AppID = '';
+let AppID = '71104d47e7ae4b11828a52a67f0c34f7';
 let localTrack = [];
 let remoteUsers = {};
 
@@ -73,8 +75,9 @@ let joinStream = async () => {
                       </div>`;
 
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player);
-        localTrack[1].play(`user-${uid}`);
+        document.getElementById(`user-container-${uid}`).addEventListener('click', expandVideoFrame);
 
+        localTrack[1].play(`user-${uid}`);
         await client.publish([localTrack[0], localTrack[1]]);
     } catch (error) {
         console.error('Erro ao iniciar o stream:', error);
@@ -93,6 +96,12 @@ let handleUserPublished = async (user, mediaType) => {
                     <div class="video-player" id="user-${user.uid}"></div>
                   </div>`;
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player);
+        document.getElementById(`user-container-${user.uid}`).addEventListener('click', expandVideoFrame);
+    }
+
+    if (displayFrame.style.display) {
+        player.style.height = '100px';
+        player.style.width = '100px';
     }
 
     if (mediaType === 'video') {
@@ -106,8 +115,19 @@ let handleUserPublished = async (user, mediaType) => {
 
 let handleUserLeft = async (user) => {
     delete remoteUsers[user.uid];
-    const player = document.getElementById(`user-container-${user.uid}`);
-    if (player) player.remove();
+    document.getElementById(`user-container-${user.uid}`).remove();
+
+    if (userIDInDisplayFrame === `user-container-${user.uid}`) {
+        displayFrame.style.display = null;
+
+        let videoFrame = document.getElementsByClassName('video_container');
+
+        for (let i = 0; videoFrame.length > i; i++) {
+            videoFrame[i].style.height = '300px';
+            videoFrame[i].style.width = '300px';
+        }
+    }
+
 };
 
 joinRoomInit();
