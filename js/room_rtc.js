@@ -71,8 +71,8 @@ let joinStream = async () => {
     try {
         localTrack = await AgoraRTC.createMicrophoneAndCameraTracks({}, {
             encoderConfig: {
-                width:{min: 640, ideal: 1920, max: 1920},
-                height:{min: 480, ideal: 1080, max: 1080}
+                width: {min: 640, ideal: 1920, max: 1920},
+                height: {min: 480, ideal: 1080, max: 1080}
             }
         });
 
@@ -106,8 +106,9 @@ let handleUserPublished = async (user, mediaType) => {
     }
 
     if (displayFrame.style.display) {
-        player.style.height = '100px';
-        player.style.width = '100px';
+        let videoFrame = document.getElementById(`user-container-${user.uid}`);
+        videoFrame.style.height = '100px';
+        videoFrame.style.width = '100px';
     }
 
     if (mediaType === 'video') {
@@ -135,5 +136,32 @@ let handleUserLeft = async (user) => {
     }
 
 };
+
+let toggleMic = async (e) => {
+    let button = e.currentTarget;
+
+    if (localTrack[0].muted) {
+        await localTrack[0].setMuted(false);
+        button.classList.add('active');
+    } else {
+        await localTrack[0].setMuted(true);
+        button.classList.remove('active');
+    }
+};
+
+let toggleCamera = async (e) => {
+    let button = e.currentTarget;
+
+    if (localTrack[1].muted) {
+        await localTrack[1].setMuted(false);
+        button.classList.add('active');
+    } else {
+        await localTrack[1].setMuted(true);
+        button.classList.remove('active');
+    }
+};
+
+document.getElementById('camera-btn').addEventListener('click', toggleCamera);
+document.getElementById('mic-btn').addEventListener('click', toggleMic);
 
 joinRoomInit();
