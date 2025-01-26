@@ -3,12 +3,18 @@ import {API_KEY} from "../config";
 
 const uid = Number(sessionStorage.getItem('uid')) || Math.floor(Math.random() * 10000);
 const channelName = 'main'; // Pode ser alterado conforme necessário
+
 let client;
 let AppID = API_KEY;
 let localTrack = [];
 let remoteUsers = {};
 let localScreenTracks;
 let sharingScreen = false;
+let displayName = sessionStorage.getItem('display_name');
+
+if (!displayName) {
+    window.location = '../lobby.html';
+}
 
 // Função para buscar o token da API
 const fetchAgoraToken = async (channelName, uid) => {
