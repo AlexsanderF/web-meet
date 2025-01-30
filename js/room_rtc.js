@@ -86,6 +86,7 @@ let joinRoomInit = async () => {
     channel.on('ChannelMessage', handleChannelMessage);
 
     getMembers();
+    addBotMessageToDom(`Welcome to the room, ${displayName}! 👋`);
 
     console.log('Generated Token RTC:', tokenRtc);
     console.log('Generated Token RTM:', tokenRtm);
