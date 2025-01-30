@@ -1,24 +1,48 @@
-import AgoraRTC from "agora-rtc-sdk-ng";
-import {API_KEY} from "../config";
-
-const uid = Number(sessionStorage.getItem('uid')) || Math.floor(Math.random() * 10000);
+let uid = Number(sessionStorage.getItem('uid')) || Math.floor(Math.random() * 4294967295) + 1;
+let uidString = String(uid);
 const channelName = 'main'; // Pode ser alterado conforme necessário
+
 let client;
-let AppID = API_KEY;
+let rtmClient;
+let channel;
+let AppID = '71104d47e7ae4b11828a52a67f0c34f7';
 let localTrack = [];
 let remoteUsers = {};
 let localScreenTracks;
 let sharingScreen = false;
+let displayName = sessionStorage.getItem('display_name');
 
-// Função para buscar o token da API
-const fetchAgoraToken = async (channelName, uid) => {
+if (!displayName) {
+    window.location = 'lobby.html';
+}
+
+// Funções para buscar os tokens da API
+const fetchAgoraTokenRtc = async (channelName, uid) => {
     try {
-        const response = await fetch('http://127.0.0.1/api/generate-token', {
+        const response = await fetch('http://127.0.0.1/api/generate-token-rtc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({channelName, uid}),
+        });
+
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error('Erro ao buscar token:', error);
+        throw error;
+    }
+};
+
+const fetchAgoraTokenRtm = async (uid) => {
+    try {
+        const response = await fetch('http://127.0.0.1/api/generate-token-rtm', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({uid: String(uid)}), // Converte para string antes de enviar
         });
 
         const data = await response.json();
@@ -44,29 +68,40 @@ const sanitizeRoomId = (roomId) => {
 
 let roomId = sanitizeRoomId(urlParams.get('room') || channelName);
 
+
 let joinRoomInit = async () => {
+    // Buscar os tokens da API
+    const tokenRtc = await fetchAgoraTokenRtc(roomId, uid);
+    const tokenRtm = await fetchAgoraTokenRtm(uidString);
+
+    rtmClient = await AgoraRTM.createInstance(AppID);
+    await rtmClient.login({"uid": uidString, "token": tokenRtm});
+    await rtmClient.addOrUpdateLocalUserAttributes({'name': displayName});
+
+    channel = await rtmClient.createChannel(roomId);
+    await channel.join()
+
+    channel.on('MemberJoined', handleMemberJoined);
+    channel.on('MemberLeft', handleMemberLeft);
+
+    getMembers();
+
+    console.log('Generated Token RTC:', tokenRtc);
+    console.log('Generated Token RTM:', tokenRtm);
+    console.log('Room ID:', roomId);
+    console.log('UID RTC:', uid);
+    console.log('UID RTM', uidString);
+
+    // Ingressar na sala com o token gerado
     client = AgoraRTC.createClient({mode: 'rtc', codec: 'vp8'});
+    await client.join(AppID, roomId, tokenRtc, uid);
+    console.log('Joined room successfully:', roomId);
 
-    try {
-        // Buscar o token da API
-        const token = await fetchAgoraToken(roomId, uid);
+    client.on('user-published', handleUserPublished);
+    client.on('user-left', handleUserLeft);
 
-        console.log('Generated Token:', token);
-        console.log('Room ID:', roomId);
-        console.log('UID:', uid);
-
-        // Ingressar na sala com o token gerado
-        await client.join(AppID, roomId, token, uid);
-        console.log('Joined room successfully:', roomId);
-
-        client.on('user-published', handleUserPublished);
-        client.on('user-left', handleUserLeft);
-
-        // Iniciar a transmissão local
-        joinStream();
-    } catch (error) {
-        console.error('Erro ao ingressar na sala:', error);
-    }
+    // Iniciar a transmissão local
+    joinStream();
 };
 
 let joinStream = async () => {
