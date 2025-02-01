@@ -1,14 +1,15 @@
 let uid = Number(sessionStorage.getItem('uid')) || Math.floor(Math.random() * 4294967295) + 1;
 let uidString = String(uid);
-const channelName = 'main'; // Pode ser alterado conforme necessário
+const channelName = 'main';
 
 let client;
 let rtmClient;
 let channel;
+let localScreenTracks;
 let AppID = '71104d47e7ae4b11828a52a67f0c34f7';
 let localTrack = [];
 let remoteUsers = {};
-let localScreenTracks;
+let wasMicMuted = true;
 let sharingScreen = false;
 let displayName = sessionStorage.getItem('display_name');
 
@@ -42,7 +43,7 @@ const fetchAgoraTokenRtm = async (uid) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({uid: String(uid)}), // Converte para string antes de enviar
+            body: JSON.stringify({uid: String(uid)}),
         });
 
         const data = await response.json();
@@ -101,6 +102,13 @@ let joinRoomInit = async () => {
 
     client.on('user-published', handleUserPublished);
     client.on('user-left', handleUserLeft);
+    client.on("network-quality", (stats) => {
+        let localQuality = stats.uplinkNetworkQuality;
+        let remoteQuality = stats.downlinkNetworkQuality;
+
+        //console.log(`Qualidade da Rede - Upload: ${localQuality}, Download: ${remoteQuality}`);
+        updateNetworkIndicator(localQuality, remoteQuality, uid);
+    });
 };
 
 let joinStream = async () => {
@@ -114,6 +122,10 @@ let joinStream = async () => {
                 height: {min: 480, ideal: 1080, max: 1080}
             }
         });
+
+        await localTrack[0].setMuted(wasMicMuted);
+
+        document.getElementById('camera-btn').classList.add('active');
 
         let player = `<div class="video_container" id="user-container-${uid}">
                                 <div class="video-player" id="user-${uid}"></div>
@@ -136,10 +148,16 @@ let switchToCamera = async () => {
 
     displayFrame.insertAdjacentHTML('beforeend', player);
 
-    await localTrack[0].setMuted(true);
-    await localTrack[1].setMuted(true);
+    if (!wasMicMuted) {
+        await localTrack[0].setMuted(false);
+        document.getElementById('mic-btn').classList.add('active');
+    } else {
+        await localTrack[0].setMuted(true);
+        document.getElementById('mic-btn').classList.remove('active');
+    }
 
-    document.getElementById('mic-btn').classList.remove('active');
+    await localTrack[1].setMuted(false);
+
     document.getElementById('screen-btn').classList.remove('active');
 
     localTrack[1].play(`user-${uid}`);
@@ -194,7 +212,6 @@ let handleUserLeft = async (user) => {
             videoFrame[i].style.width = '300px';
         }
     }
-
 };
 
 let toggleMic = async (e) => {
@@ -202,9 +219,11 @@ let toggleMic = async (e) => {
 
     if (localTrack[0].muted) {
         await localTrack[0].setMuted(false);
+        wasMicMuted = false;
         button.classList.add('active');
     } else {
         await localTrack[0].setMuted(true);
+        wasMicMuted = true;
         button.classList.remove('active');
     }
 };
@@ -224,21 +243,29 @@ let toggleCamera = async (e) => {
 let toggleScreen = async (e) => {
     let screenButton = e.currentTarget;
     let cameraButton = document.getElementById('camera-btn');
+    let micButton = document.getElementById('mic-btn');
 
     if (!sharingScreen) {
         sharingScreen = true;
 
         screenButton.classList.add('active');
-        cameraButton.classList.remove('active');
         cameraButton.style.display = 'none';
+
+        if (!wasMicMuted) {
+            await localTrack[0].setMuted(false);
+            micButton.classList.add('active');
+        } else {
+            await localTrack[0].setMuted(true);
+            micButton.classList.remove('active');
+        }
 
         localScreenTracks = await AgoraRTC.createScreenVideoTrack();
 
         document.getElementById(`user-container-${uid}`).remove();
         displayFrame.style.display = 'block';
 
-        let player = `<div class="video_container" id="user-container-${user.uid}">
-                                <div class="video-player" id="user-${user.uid}"></div>
+        let player = `<div class="video_container" id="user-container-${uid}">
+                                <div class="video-player" id="user-${uid}"></div>
                             </div>`;
 
         displayFrame.insertAdjacentHTML('beforeend', player);
@@ -248,6 +275,8 @@ let toggleScreen = async (e) => {
         localScreenTracks.play(`user-${uid}`);
 
         await client.unpublish([localTrack[1]]);
+        await client.publish([localTrack[0]]);
+
         await client.publish([localScreenTracks]);
 
         let videoFrames = document.getElementsByClassName('video_container');
@@ -257,13 +286,15 @@ let toggleScreen = async (e) => {
                 videoFrames[i].style.width = '100px';
             }
         }
+
     } else {
         sharingScreen = false;
         cameraButton.style.display = 'block';
+
         document.getElementById(`user-container-${uid}`).remove();
         await client.unpublish([localScreenTracks]);
 
-        switchToCamera();
+        await switchToCamera();
     }
 }
 
@@ -273,12 +304,12 @@ let leaveStream = async (e) => {
     document.getElementById('join-btn').style.display = 'block';
     document.getElementsByClassName('stream__actions')[0].style.display = 'none';
 
-    for (let i = 0; localTracks.length > i; i++) {
-        localTracks[i].stop();
-        localTracks[i].close();
+    for (let i = 0; localTrack.length > i; i++) {
+        localTrack[i].stop();
+        localTrack[i].close();
     }
 
-    await client.unpublish([localTracks[0], localTracks[1]]);
+    await client.unpublish([localTrack[0], localTrack[1]]);
 
     if (localScreenTracks) {
         await client.unpublish([localScreenTracks]);
@@ -297,6 +328,9 @@ let leaveStream = async (e) => {
 
     channel.sendMessage({text: JSON.stringify({'type': 'user_left', 'uid': uid})});
 }
+
+
+
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera);
 document.getElementById('mic-btn').addEventListener('click', toggleMic);
