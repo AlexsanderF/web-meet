@@ -2,10 +2,10 @@ let handleMemberJoined = async (MemberId) => {
     let {name} = await rtmClient.getUserAttributesByKeys(MemberId, ['name']);
 
     console.log('A new member has joined the room:', MemberId);
-    addMemberToDom(MemberId);
+    await addMemberToDom(MemberId);
 
     let members = await channel.getMembers();
-    updateMemberTotal(members);
+    await updateMemberTotal(members);
 
     addBotMessageToDom(`Welcome to the room, ${name}! 👋`);
 }
@@ -15,11 +15,18 @@ let addMemberToDom = async (MemberId) => {
 
     let membersWrapper = document.getElementById('member__list');
     let memberItem = `<div class="member__wrapper" id="member__${MemberId}__wrapper">
-                                <span class="green__icon"></span>
-                                <p class="member_name">${name}</p>
+                                <div class="user-info">
+                                    <p class="member_name">${name}</p>
+                                    <div id="internet-quality-${MemberId}" class="internet-quality"></div>
+                                </div>
                             </div>`;
 
     membersWrapper.insertAdjacentHTML('beforeend', memberItem);
+
+    let qualityElement = document.getElementById(`internet-quality-${MemberId}`);
+    if (qualityElement) {
+        setupInternetQuality(qualityElement);
+    }
 }
 
 let updateMemberTotal = async (members) => {
@@ -30,10 +37,10 @@ let updateMemberTotal = async (members) => {
 
 let handleMemberLeft = async (MemberId) => {
     console.log('A member has left the room:', MemberId);
-    removerMemberFromDom(MemberId);
+    await removerMemberFromDom(MemberId);
 
     let members = await channel.getMembers();
-    updateMemberTotal(members);
+    await updateMemberTotal(members);
 }
 
 let removerMemberFromDom = async (MemberId) => {
@@ -125,3 +132,41 @@ window.addEventListener('beforeunload', leaveChannel);
 
 let messageForm = document.getElementById('message__form');
 messageForm.addEventListener('submit', sendMessage);
+
+function setupInternetQuality(element) {
+    const qualities = [
+        {level: 'very-poor', color: '#ff0000'},  // Muito ruim (5)
+        {level: 'poor', color: '#ce6122'},       // Ruim (4)
+        {level: 'fair', color: '#ffd700'},       // Regular (3)
+        {level: 'good', color: '#90EE90'},       // Bom (2)
+        {level: 'excellent', color: '#32CD32'}   // Excelente (1)
+    ];
+
+    const container = document.createElement('div');
+    container.className = 'internet-quality';
+
+    qualities.forEach((quality, index) => {
+        const step = document.createElement('div');
+        step.className = 'quality-step';
+        step.style.height = `${(index + 1) * 3}px`;
+        step.style.backgroundColor = quality.color;
+        container.appendChild(step);
+    });
+
+    element.appendChild(container);
+}
+
+function updateNetworkIndicator(localQuality, remoteQuality, memberId) {
+    // console.log(`Atualizando UI para UID ${memberId} - Local: ${localQuality}, Remote: ${remoteQuality}`);
+
+    let qualityLevel = Math.max(localQuality, remoteQuality); // Pega o pior dos dois
+
+    let qualityElement = document.getElementById(`internet-quality-${memberId}`);
+    if (!qualityElement) return;
+
+    let steps = qualityElement.querySelectorAll('.quality-step');
+
+    steps.forEach((step, index) => {
+        step.style.opacity = index < (6 - qualityLevel) ? '1' : '0.3';
+    });
+}
