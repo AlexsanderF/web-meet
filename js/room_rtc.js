@@ -54,7 +54,6 @@ const fetchAgoraTokenRtm = async (uid) => {
     }
 };
 
-
 // Sanitizar o ID da sala
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
@@ -68,7 +67,6 @@ const sanitizeRoomId = (roomId) => {
 };
 
 let roomId = sanitizeRoomId(urlParams.get('room') || channelName);
-
 
 let joinRoomInit = async () => {
     // Buscar os tokens da API
@@ -139,6 +137,7 @@ let joinStream = async () => {
     } catch (error) {
         console.error('Erro ao iniciar o stream:', error);
     }
+    initVolumeIndicator();
 };
 
 let switchToCamera = async () => {
@@ -329,8 +328,25 @@ let leaveStream = async (e) => {
     channel.sendMessage({text: JSON.stringify({'type': 'user_left', 'uid': uid})});
 }
 
+let initVolumeIndicator = () => {
+    AgoraRTC.setParameter('AUDIO_VOLUME_INDICATION_INTERVAL', 200);
+    client.enableAudioVolumeIndicator();
 
+    client.on('volume-indicator', volumes => {
+        //console.log('Volumes', volumes);
+        volumes.forEach(volume => {
+            console.log('VOLUME:', volume.level, 'UID:', volume.uid);
 
+            let item = document.getElementById(`user-container-${volume.uid}`);
+
+            if (volume.level >= 50) {
+                item.style.borderColor = "#00ff00";
+            } else {
+                item.style.borderColor = "#b366f9"
+            }
+        });
+    });
+};
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera);
 document.getElementById('mic-btn').addEventListener('click', toggleMic);
