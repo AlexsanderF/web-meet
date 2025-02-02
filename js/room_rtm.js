@@ -53,14 +53,14 @@ let removerMemberFromDom = async (MemberId) => {
 
 let getMembers = async () => {
     let members = await channel.getMembers();
-    updateMemberTotal(members);
+    await updateMemberTotal(members);
 
     for (let i = 0; members.length > i; i++) {
-        addMemberToDom(members[i]);
+        await addMemberToDom(members[i]);
     }
 }
 
-let handleChannelMessage = async (messageData, MemberId) => {
+let handleChannelMessage = async (messageData) => {
     console.log('A new message was received.');
     let data = JSON.parse(messageData.text);
 

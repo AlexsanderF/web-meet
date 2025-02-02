@@ -20,7 +20,7 @@ if (!displayName) {
 // Funções para buscar os tokens da API
 const fetchAgoraTokenRtc = async (channelName, uid) => {
     try {
-        const response = await fetch('http://127.0.0.1/api/generate-token-rtc', {
+        const response = await fetch('https://aapiservice.infatec.solutions/api/generate-token-rtc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ const fetchAgoraTokenRtc = async (channelName, uid) => {
 
 const fetchAgoraTokenRtm = async (uid) => {
     try {
-        const response = await fetch('http://127.0.0.1/api/generate-token-rtm', {
+        const response = await fetch('https://aapiservice.infatec.solutions/api/generate-token-rtm', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -335,7 +335,7 @@ let initVolumeIndicator = () => {
     client.on('volume-indicator', volumes => {
         //console.log('Volumes', volumes);
         volumes.forEach(volume => {
-            console.log('VOLUME:', volume.level, 'UID:', volume.uid);
+            //console.log('VOLUME:', volume.level, 'UID:', volume.uid);
 
             let item = document.getElementById(`user-container-${volume.uid}`);
 
