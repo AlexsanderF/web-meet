@@ -343,6 +343,33 @@ let leaveRoom = async () => {
     window.location.href = "../lobby.html";
 };
 
+async function listAvailableDevices() {
+    const devices = await AgoraRTC.getDevices();
+
+    const cameras = devices.filter(device => device.kind === "videoinput");
+    const microphones = devices.filter(device => device.kind === "audioinput");
+
+    let cameraSelect = document.getElementById("cameraSelect");
+    let micSelect = document.getElementById("micSelect");
+
+    cameraSelect.innerHTML = ""; // Limpa as opções anteriores
+    micSelect.innerHTML = "";
+
+    cameras.forEach(camera => {
+        let option = document.createElement("option");
+        option.value = camera.deviceId;
+        option.text = camera.label || `Câmera ${camera.deviceId}`;
+        cameraSelect.appendChild(option);
+    });
+
+    microphones.forEach(mic => {
+        let option = document.createElement("option");
+        option.value = mic.deviceId;
+        option.text = mic.label || `Microfone ${mic.deviceId}`;
+        micSelect.appendChild(option);
+    });
+}
+
 let initVolumeIndicator = () => {
     AgoraRTC.setParameter('AUDIO_VOLUME_INDICATION_INTERVAL', 200);
     client.enableAudioVolumeIndicator();
@@ -370,4 +397,32 @@ document.getElementById('leave-btn').addEventListener('click', leaveStream);
 document.getElementById('join-btn').addEventListener('click', joinStream);
 document.querySelectorAll('.leave-room').forEach(element => element.addEventListener('click', leaveRoom));
 
-joinRoomInit();
+
+// CONFIGURAÇÕES DO MODAL
+
+document.querySelectorAll('.settings-toggle').forEach(element => element.addEventListener('click', function () {
+    document.getElementById("settingsModal").style.display = "flex";
+    listAvailableDevices().then(() => {
+    }).catch(error => console.error("Erro ao listar dispositivos:", error));
+}));
+
+document.getElementById("saveSettings").addEventListener("click", async function () {
+    let selectedCamera = document.getElementById("cameraSelect").value;
+    let selectedMic = document.getElementById("micSelect").value;
+
+    if (localTrack[1]) {
+        await localTrack[1].setDevice(selectedCamera);
+    }
+    if (localTrack[0]) {
+        await localTrack[0].setDevice(selectedMic);
+    }
+
+    document.getElementById("settingsModal").style.display = "none";
+});
+
+document.getElementById("closeModal").addEventListener("click", function () {
+    document.getElementById("settingsModal").style.display = "none";
+});
+
+joinRoomInit().then(() => {
+}).catch(error => console.error("Erro ao entrar na sala:", error));

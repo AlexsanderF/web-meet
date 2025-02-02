@@ -33,7 +33,7 @@
                 <img src="images/icons/chat.svg" alt="chat room">
                 Chat
             </div>
-            <div class="web" id="settings__room__btn">
+            <div class="web settings-toggle" id="settings__room__btn">
                 <img src="images/icons/settings.svg" alt="settings room"/>
                 Config.
             </div>
@@ -46,7 +46,7 @@
             <div class="mobile chat-toggle" id="mobile__chat">
                 <img src="images/icons/chat.svg" alt="chat room"/>
             </div>
-            <div class="mobile" id="mobile__settings">
+            <div class="mobile settings-toggle" id="mobile__settings">
                 <img src="images/icons/settings.svg" alt="settings room"/>
             </div>
             <div class="mobile leave-room" id="mobile__leave">
@@ -67,6 +67,23 @@
 
             <div id="member__list"></div>
 
+        </section>
+
+        <section id="settings__modal">
+            <div id="settingsModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" id="closeModal">&times;</span>
+                    <h2>Configurações de Dispositivo</h2>
+                    <div id="selection__settings">
+                        <label for="cameraSelect">Selecionar Câmera:</label>
+                        <select id="cameraSelect"></select>
+
+                        <label for="micSelect">Selecionar Microfone:</label>
+                        <select id="micSelect"></select>
+                    </div>
+                    <button id="saveSettings">Salvar</button>
+                </div>
+            </div>
         </section>
 
         <section id="stream__container">
