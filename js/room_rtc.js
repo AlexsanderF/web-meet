@@ -328,6 +328,21 @@ let leaveStream = async (e) => {
     channel.sendMessage({text: JSON.stringify({'type': 'user_left', 'uid': uid})});
 }
 
+let leaveRoom = async () => {
+    if (localTrack && localTrack.length > 0) {
+        localTrack[0]?.stop();
+        localTrack[0]?.close();
+        localTrack[1]?.stop();
+        localTrack[1]?.close();
+
+        await handleMemberLeft(uid);
+
+        await client.leave();
+    }
+
+    window.location.href = "../lobby.html";
+};
+
 let initVolumeIndicator = () => {
     AgoraRTC.setParameter('AUDIO_VOLUME_INDICATION_INTERVAL', 200);
     client.enableAudioVolumeIndicator();
@@ -353,5 +368,6 @@ document.getElementById('mic-btn').addEventListener('click', toggleMic);
 document.getElementById('screen-btn').addEventListener('click', toggleScreen);
 document.getElementById('leave-btn').addEventListener('click', leaveStream);
 document.getElementById('join-btn').addEventListener('click', joinStream);
+document.querySelectorAll('.leave-room').forEach(element => element.addEventListener('click', leaveRoom));
 
 joinRoomInit();
