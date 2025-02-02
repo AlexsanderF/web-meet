@@ -250,10 +250,6 @@
         display: none;
     }
 
-    #members__button {
-        display: block;
-    }
-
     #stream__container {
         width: calc(100% - 25rem);
         left: 0;
@@ -285,12 +281,65 @@
         width: 100px;
     }
 
-    #messages__container {
+    #list_members__btn {
         display: none;
     }
 
-    #chat__button {
+    .web__parameters div img {
+        padding: 0 0;
+    }
+
+    #mobile__members {
         display: block;
+        background-color: #3b5398;
+    }
+
+    #mobile__members:hover {
+        background-color: #6b8be3;
+    }
+
+    #mobile__chat {
+        display: block;
+        background-color: #845695;
+    }
+
+    #mobile__chat:hover {
+        background-color: #b385b5;
+    }
+
+    #mobile__settings {
+        display: block;
+        background-color: #123456;
+    }
+
+    #mobile__settings:hover {
+        background-color: #576398;
+    }
+
+    #mobile__leave {
+        display: block;
+        background-color: indianred;
+    }
+
+    #mobile__leave:hover {
+        background-color: #bc8787;
+    }
+
+    #chat__room__btn {
+        display: none;
+    }
+
+    #settings__room__btn {
+        display: none;
+    }
+
+    #leave__room__btn {
+        display: none;
+    }
+
+    #container__mobile {
+        display: flex;
+        gap: 10px;
     }
 }
 
