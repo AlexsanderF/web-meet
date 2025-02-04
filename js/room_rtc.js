@@ -14,13 +14,13 @@ let sharingScreen = false;
 let displayName = sessionStorage.getItem('display_name');
 
 if (!displayName) {
-    window.location = 'lobby.html';
+    window.location = 'index.html';
 }
 
 // Funções para buscar os tokens da API
 const fetchAgoraTokenRtc = async (channelName, uid) => {
     try {
-        const response = await fetch('https://aapiservice.infatec.solutions/api/generate-token-rtc', {
+        const response = await fetch('https://apiservice.infatec.solutions/api/generate-token-rtc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ const fetchAgoraTokenRtc = async (channelName, uid) => {
 
 const fetchAgoraTokenRtm = async (uid) => {
     try {
-        const response = await fetch('https://aapiservice.infatec.solutions/api/generate-token-rtm', {
+        const response = await fetch('https://apiservice.infatec.solutions/api/generate-token-rtm', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -340,7 +340,7 @@ let leaveRoom = async () => {
         await client.leave();
     }
 
-    window.location.href = "../lobby.html";
+    window.location.href = "../index.html";
 };
 
 async function listAvailableDevices() {
