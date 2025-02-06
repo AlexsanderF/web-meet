@@ -42,8 +42,8 @@ let expandVideoFrame = (e) => {
 
     for (let i = 0; videoFrame.length > i; i++) {
         if (videoFrame[i].id !== userIDInDisplayFrame) {
-            videoFrame[i].style.height = '100px';
-            videoFrame[i].style.width = '100px';
+            videoFrame[i].style.height = '150px';
+            videoFrame[i].style.width = '150px';
         }
     }
 };
@@ -59,10 +59,6 @@ let hideDisplayFrame = () => {
     let child = displayFrame.children[0];
     document.getElementById('streams__container').appendChild(child);
 
-    for (let i = 0; videoFrame.length > i; i++) {
-        videoFrame[i].style.height = '300px';
-        videoFrame[i].style.width = '300px';
-    }
 }
 
 displayFrame.addEventListener('click', hideDisplayFrame);

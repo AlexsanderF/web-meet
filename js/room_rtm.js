@@ -86,7 +86,7 @@ let sendMessage = async (e) => {
     e.preventDefault();
 
     let message = e.target.message.value;
-    await channel.sendMessage({text: JSON.stringify({'type': 'chat', 'message': message, 'displayName': displayName})}); //remover o await se der erro
+    await channel.sendMessage({text: JSON.stringify({'type': 'chat', 'message': message, 'displayName': displayName})});
     addMessageToDom(displayName, message);
     e.target.reset();
 }
