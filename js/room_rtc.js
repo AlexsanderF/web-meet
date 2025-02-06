@@ -61,7 +61,7 @@ const urlParams = new URLSearchParams(queryString);
 const sanitizeRoomId = (roomId) => {
     const validCharsRegex = /^[a-zA-Z0-9 !#$%&()+\-:;<=>?@[\\\]^_{|}~,.]{1,64}$/;
     if (!roomId || !validCharsRegex.test(roomId)) {
-        return 'main'; // Valor padrão
+        return 'main';
     }
     return roomId;
 };
@@ -83,8 +83,45 @@ let joinRoomInit = async () => {
     channel.on('MemberJoined', handleMemberJoined);
     channel.on('MemberLeft', handleMemberLeft);
     channel.on('ChannelMessage', handleChannelMessage);
+    channel.on('ChannelMessage', (message, memberId) => {
+        try {
+            let data = JSON.parse(message.text);
+            if (data.type === 'cameraOn') {
+                let avatarElem = document.getElementById(`user-avatar-${data.uid}`);
+                if (avatarElem) {
+                    avatarElem.style.display = "none";
+                }
+            } else if (data.type === 'cameraOff') {
+                let avatarElem = document.getElementById(`user-avatar-${data.uid}`);
+                if (avatarElem) {
+                    avatarElem.style.display = "block";
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao processar a mensagem do canal:", error);
+        }
+    });
+    channel.on('ChannelMessage', (message, memberId) => {
+        try {
+            let data = JSON.parse(message.text);
+            if (data.type === 'micOn') {
+                let micElem = document.querySelector(`#user-container-${data.uid} .audio-icon`);
+                if (micElem) {
+                    micElem.classList.remove("muted");
+                }
+            } else if (data.type === 'micOff') {
+                let micElem = document.querySelector(`#user-container-${data.uid} .audio-icon`);
+                if (micElem) {
+                    micElem.classList.add("muted");
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao processar mensagem do canal:", error);
+        }
+    });
 
-    getMembers();
+
+    await getMembers();
     addBotMessageToDom(`Welcome to the room, ${displayName}! 👋`);
 
     console.log('Generated Token RTC:', tokenRtc);
@@ -98,6 +135,7 @@ let joinRoomInit = async () => {
     await client.join(AppID, roomId, tokenRtc, uid);
     console.log('Joined room successfully:', roomId);
 
+    client.on('user-joined', handleUserJoined);
     client.on('user-published', handleUserPublished);
     client.on('user-left', handleUserLeft);
     client.on("network-quality", (stats) => {
@@ -110,6 +148,7 @@ let joinRoomInit = async () => {
 };
 
 let joinStream = async () => {
+    let {name} = await rtmClient.getUserAttributesByKeys(String(uid), ['name']);
     document.getElementById('join-btn').style.display = 'none';
     document.getElementsByClassName('stream__actions')[0].style.display = 'flex';
 
@@ -123,17 +162,24 @@ let joinStream = async () => {
 
         await localTrack[0].setMuted(wasMicMuted);
 
-        document.getElementById('camera-btn').classList.add('active');
-
-        let player = `<div class="video_container" id="user-container-${uid}">
-                                <div class="video-player" id="user-${uid}"></div>
+        let player = `<div id="user-container-${uid}" class="user-modal video_container">
+                                <div id="user-${uid}" class="video-player">
+                                    <div class="audio-indicator">
+                                        <div class="audio-icon fullscreen muted"></div>
+                                    </div>
+                                    <div id="user-avatar-${uid}" class="user-avatar fullscreen">
+                                        <img src="https://i.pravatar.cc/150" alt="User Avatar">
+                                    </div>
+                                    <div id="user-name-${uid}" class="user-name">
+                                        ${name}
+                                    </div>
+                                </div>
                             </div>`;
 
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player);
         document.getElementById(`user-container-${uid}`).addEventListener('click', expandVideoFrame);
 
-        localTrack[1].play(`user-${uid}`);
-        await client.publish([localTrack[0], localTrack[1]]);
+        await client.publish([localTrack[0]]);
     } catch (error) {
         console.error('Erro ao iniciar o stream:', error);
     }
@@ -141,9 +187,21 @@ let joinStream = async () => {
 };
 
 let switchToCamera = async () => {
-    let player = `<div class="video_container" id="user-container-${uid}">
-                            <div class="video-player" id="user-${uid}"></div>
-                        </div>`;
+    let {name} = await rtmClient.getUserAttributesByKeys(String(uid), ['name']);
+
+    let player = `<div id="user-container-${uid}" class="user-modal video_container">
+                                <div id="user-${uid}" class="video-player">
+                                    <div class="audio-indicator">
+                                        <div class="audio-icon fullscreen muted"></div>
+                                    </div>
+                                    <div id="user-avatar-${uid}" class="user-avatar">
+                                        <img src="https://i.pravatar.cc/150" alt="User Avatar">
+                                    </div>
+                                    <div id="user-name-${uid}" class="user-name">
+                                        ${name}
+                                    </div>
+                                </div>
+                            </div>`;
 
     displayFrame.insertAdjacentHTML('beforeend', player);
 
@@ -163,25 +221,62 @@ let switchToCamera = async () => {
     await client.publish([localTrack[1]]);
 }
 
+let handleUserJoined = async (user) => {
+    console.log(`Usuário entrou: ${user.uid}`);
+    let {name} = await rtmClient.getUserAttributesByKeys(String(user.uid), ['name']);
+
+    if (!document.getElementById(`user-container-${user.uid}`)) {
+        let player = `<div id="user-container-${user.uid}" class="user-modal video_container">
+                        <div id="user-${user.uid}" class="video-player">
+                            <div class="audio-indicator">
+                                <div class="audio-icon fullscreen muted"></div>
+                            </div>
+                            <div id="user-avatar-${user.uid}" class="user-avatar fullscreen">
+                                <img src="https://i.pravatar.cc/150" alt="User Avatar">
+                            </div>
+                            <div id="user-name-${uid}" class="user-name">
+                                ${name}
+                            </div>
+                        </div>
+                      </div>`;
+
+        document.getElementById('streams__container').insertAdjacentHTML('beforeend', player);
+    }
+};
+
 let handleUserPublished = async (user, mediaType) => {
     remoteUsers[user.uid] = user;
+    let {name} = await rtmClient.getUserAttributesByKeys(String(user.uid), ['name']);
 
     await client.subscribe(user, mediaType);
+
 
     let player = document.getElementById(`user-container-${user.uid}`);
 
     if (player === null) {
-        player = `<div class="video_container" id="user-container-${user.uid}">
-                    <div class="video-player" id="user-${user.uid}"></div>
-                  </div>`;
+        let player = `<div id="user-container-${user.uid}" class="user-modal video_container">
+                                <div id="user-${user.uid}" class="video-player">
+                                    <div class="audio-indicator">
+                                        <div class="audio-icon fullscreen muted"></div>
+                                    </div>
+                                    <div id="user-avatar-${user.uid}" class="user-avatar fullscreen">
+                                        <img src="https://i.pravatar.cc/150" alt="User Avatar">
+                                    </div>
+                                    <div id="user-name-${uid}" class="user-name">
+                                        ${name}
+                                    </div>
+                                </div>
+                            </div>`;
+
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player);
-        document.getElementById(`user-container-${user.uid}`).addEventListener('click', expandVideoFrame);
     }
+
+    document.getElementById(`user-container-${user.uid}`).addEventListener('click', expandVideoFrame);
 
     if (displayFrame.style.display) {
         let videoFrame = document.getElementById(`user-container-${user.uid}`);
-        videoFrame.style.height = '100px';
-        videoFrame.style.width = '100px';
+        videoFrame.style.height = '150px';
+        videoFrame.style.width = '150px';
     }
 
     if (mediaType === 'video') {
@@ -194,55 +289,77 @@ let handleUserPublished = async (user, mediaType) => {
 };
 
 let handleUserLeft = async (user) => {
-    delete remoteUsers[user.uid];
-    let item = document.getElementById(`user-container-${user.uid}`);
+    console.log(`Usuário saiu: ${user.uid}`);
 
-    if (item) {
-        item.remove();
-    }
-
-    if (userIDInDisplayFrame === `user-container-${user.uid}`) {
-        displayFrame.style.display = null;
-
-        let videoFrame = document.getElementsByClassName('video_container');
-
-        for (let i = 0; videoFrame.length > i; i++) {
-            videoFrame[i].style.height = '300px';
-            videoFrame[i].style.width = '300px';
-        }
+    let userElement = document.getElementById(`user-container-${user.uid}`);
+    if (userElement) {
+        userElement.remove();
     }
 };
 
 let toggleMic = async (e) => {
     let button = e.currentTarget;
+    let audioIcon = document.querySelector(`#user-container-${uid} .audio-icon`);
 
     if (localTrack[0].muted) {
         await localTrack[0].setMuted(false);
         wasMicMuted = false;
         button.classList.add('active');
+
+        if (audioIcon) {
+            audioIcon.classList.remove('muted');
+        }
+
+        channel.sendMessage({text: JSON.stringify({type: 'micOn', uid: uid})});
     } else {
         await localTrack[0].setMuted(true);
         wasMicMuted = true;
         button.classList.remove('active');
+
+        if (audioIcon) {
+            audioIcon.classList.add('muted');
+        }
+
+        channel.sendMessage({text: JSON.stringify({type: 'micOff', uid: uid})});
     }
 };
 
 let toggleCamera = async (e) => {
     let button = e.currentTarget;
+    if (!localTrack[1]) {
+        localTrack[1] = await AgoraRTC.createCameraVideoTrack();
+        await client.publish([localTrack[1]]);
+        localTrack[1].play(`user-${uid}`);
+        button.classList.add("active");
 
-    if (localTrack[1].muted) {
-        await localTrack[1].setMuted(false);
-        button.classList.add('active');
+        document.getElementById(`user-avatar-${uid}`).style.display = "none";
+
+        channel.sendMessage({text: JSON.stringify({type: 'cameraOn', uid: uid})});
     } else {
-        await localTrack[1].setMuted(true);
-        button.classList.remove('active');
+        if (localTrack[1].isPlaying) {
+            localTrack[1].stop();
+            await client.unpublish([localTrack[1]]);
+            document.getElementById(`user-avatar-${uid}`).style.display = "block";
+            button.classList.remove("active");
+
+            channel.sendMessage({text: JSON.stringify({type: 'cameraOff', uid: uid})});
+        } else {
+            localTrack[1].play(`user-${uid}`);
+            await client.publish([localTrack[1]]);
+            document.getElementById(`user-avatar-${uid}`).style.display = "none";
+            button.classList.add("active");
+
+            channel.sendMessage({text: JSON.stringify({type: 'cameraOn', uid: uid})});
+        }
     }
 };
+
 
 let toggleScreen = async (e) => {
     let screenButton = e.currentTarget;
     let cameraButton = document.getElementById('camera-btn');
     let micButton = document.getElementById('mic-btn');
+    let {name} = await rtmClient.getUserAttributesByKeys(String(uid), ['name']);
 
     if (!sharingScreen) {
         sharingScreen = true;
@@ -263,8 +380,18 @@ let toggleScreen = async (e) => {
         document.getElementById(`user-container-${uid}`).remove();
         displayFrame.style.display = 'block';
 
-        let player = `<div class="video_container" id="user-container-${uid}">
-                                <div class="video-player" id="user-${uid}"></div>
+        let player = `<div id="user-container-${uid}" class="user-modal video_container">
+                                <div id="user-${uid}" class="video-player">
+                                    <div class="audio-indicator">
+                                        <div class="audio-icon fullscreen muted"></div>
+                                    </div>
+                                    <div id="user-avatar-${uid}" class="user-avatar fullscreen">
+                                        <img src="https://i.pravatar.cc/150" alt="User Avatar">
+                                    </div>
+                                    <div id="user-name-${uid}" class="user-name">
+                                        ${name}
+                                    </div>
+                                </div>
                             </div>`;
 
         displayFrame.insertAdjacentHTML('beforeend', player);
@@ -281,8 +408,8 @@ let toggleScreen = async (e) => {
         let videoFrames = document.getElementsByClassName('video_container');
         for (let i = 0; videoFrames.length > i; i++) {
             if (videoFrames[i].id !== userIDInDisplayFrame) {
-                videoFrames[i].style.height = '100px';
-                videoFrames[i].style.width = '100px';
+                videoFrames[i].style.height = '150px';
+                videoFrames[i].style.width = '150px';
             }
         }
 
@@ -303,9 +430,14 @@ let leaveStream = async (e) => {
     document.getElementById('join-btn').style.display = 'block';
     document.getElementsByClassName('stream__actions')[0].style.display = 'none';
 
-    for (let i = 0; localTrack.length > i; i++) {
-        localTrack[i].stop();
-        localTrack[i].close();
+    if (localTrack[0]) {
+        localTrack[0].stop();
+        localTrack[0].close();
+    }
+
+    if (localTrack[1]) {
+        localTrack[1].stop();
+        localTrack[1].close();
     }
 
     await client.unpublish([localTrack[0], localTrack[1]]);
@@ -314,7 +446,10 @@ let leaveStream = async (e) => {
         await client.unpublish([localScreenTracks]);
     }
 
-    document.getElementById(`user-container-${uid}`).remove();
+    let userElement = document.getElementById(`user-container-${uid}`);
+    if (userElement) {
+        userElement.remove();
+    }
 
     if (userIDInDisplayFrame === `user-container-${uid}`) {
         displayFrame.style.display = null;
@@ -324,9 +459,10 @@ let leaveStream = async (e) => {
             videoFrames[i].style.width = '300px';
         }
     }
+    channel.sendMessage({text: JSON.stringify({'type': 'user_left_stream', 'uid': uid})});
 
-    channel.sendMessage({text: JSON.stringify({'type': 'user_left', 'uid': uid})});
-}
+    console.log(`Usuário ${uid} saiu do stream, mas ainda está na sala.`);
+};
 
 let leaveRoom = async () => {
     if (localTrack && localTrack.length > 0) {
@@ -352,7 +488,7 @@ async function listAvailableDevices() {
     let cameraSelect = document.getElementById("cameraSelect");
     let micSelect = document.getElementById("micSelect");
 
-    cameraSelect.innerHTML = ""; // Limpa as opções anteriores
+    cameraSelect.innerHTML = "";
     micSelect.innerHTML = "";
 
     cameras.forEach(camera => {
@@ -379,7 +515,7 @@ let initVolumeIndicator = () => {
         volumes.forEach(volume => {
             //console.log('VOLUME:', volume.level, 'UID:', volume.uid);
 
-            let item = document.getElementById(`user-container-${volume.uid}`);
+            let item = document.getElementById(`user-avatar-${volume.uid}`);
 
             if (volume.level >= 50) {
                 item.style.borderColor = "#00ff00";
